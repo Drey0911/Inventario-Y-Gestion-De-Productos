@@ -48,33 +48,9 @@ $rol_nombre = $rol['nombre'];
     <title>Menú Principal - Gestión de Inventario</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/Styles.css">
+    <link rel="stylesheet" href="styles/Card.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
-        }
-        .gradient-text {
-            background: linear-gradient(90deg, #7f29c2 0%, #a855f7 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .card-hover {
-            transition: all 0.3s ease;
-        }
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(127, 41, 194, 0.3);
-        }
-        .menu-item {
-            transition: all 0.2s ease;
-        }
-        .menu-item:hover {
-            background-color: rgba(127, 41, 194, 0.1);
-        }
-    </style>
 </head>
 
 <body class="text-gray-100">

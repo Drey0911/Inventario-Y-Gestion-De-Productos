@@ -62,43 +62,9 @@ function validar_contraseña($contraseña) {
     <title>INVDrey - Registro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/Styles.css">
+    <link rel="stylesheet" href="styles/Sesion.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        }
-        .gradient-text {
-            background: linear-gradient(90deg, #7f29c2 0%, #a855f7 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .btn-primary {
-            background: linear-gradient(90deg, #7f29c2 0%, #a855f7 100%);
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(127, 41, 194, 0.3);
-        }
-        .input-field:focus {
-            border-color: #7f29c2;
-            box-shadow: 0 0 0 3px rgba(127, 41, 194, 0.2);
-        }
-        .password-strength {
-            height: 4px;
-            background: #374151;
-            margin-top: 8px;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-        .password-strength-fill {
-            height: 100%;
-            width: 0%;
-            transition: width 0.3s ease, background 0.3s ease;
-        }
-    </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md bg-gray-800 rounded-xl shadow-2xl overflow-hidden transition-all duration-300 hover:shadow-purple-500/20">

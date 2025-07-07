@@ -1,0 +1,20 @@
+ .btn-primary {
+            background: linear-gradient(90deg, #7f29c2 0%, #a855f7 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(127, 41, 194, 0.3);
+        }
+        .password-strength {
+            height: 4px;
+            background: #374151;
+            margin-top: 8px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .password-strength-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease, background 0.3s ease;
+        }
