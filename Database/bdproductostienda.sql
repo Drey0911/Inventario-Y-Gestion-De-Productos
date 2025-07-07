@@ -2,8 +2,8 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Servidor: 127.0.0.1:3308
--- Tiempo de generación: 06-04-2025 a las 06:59:51
+-- Servidor: 127.0.0.1:3306
+-- Tiempo de generación: 06-07-2025 a las 00:10:49
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.0.30
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Base de datos: `bdtiendaproductos`
+-- Base de datos: `bdproductostienda`
 --
 
 -- --------------------------------------------------------
@@ -45,10 +45,11 @@ CREATE TABLE `clientes` (
 
 INSERT INTO `clientes` (`id`, `nombre`, `apellido`, `DNI`, `ciudad`, `telefono`, `correo`, `direccion`, `estado`) VALUES
 (1, 'Gabriela', 'Jaimes D', '1007193080', 'Bucaramanga', '3222514188', 'gabi@gmail.com', 'calle 43 giron asssffff', 1),
-(2, 'Juan', 'Rodriguez P', '1007183560', 'Bucaramanga', '3225147896', 'juand@gmail.com', 'calle 56 giron', 1),
+(2, 'Juan', 'Rodriguez P', '1007183560', 'Bucaramanga', '3225147896', 'juand@gmail.com', 'calle 56 giron', 0),
 (3, 'Andrey', 'M', '1007193050', 'Bucaramanga', '3222514185', 'a@asss', 'giron calle 45', 0),
 (4, 'dsadsadsa', 'asddasasd', '1007193080', 'dsasddas', '25255', 'uts@edu.co', 'saddsa', 0),
-(5, 'Andrey', 'Mantilla', '1007193050', 'Giron', '3222514185', 'andreystteven@gmail.com', 'calle 44', 1);
+(5, 'Andrey', 'Mantilla', '1007193050', 'Giron', '3222514185', 'andreystteven@gmail.com', 'calle 44', 0),
+(6, 'sdad', 'sadad', '52522525', 'das', '23663', 'sss@gmail.com', 'dsaads', 0);
 
 -- --------------------------------------------------------
 
@@ -184,17 +185,9 @@ CREATE TABLE `usuarios` (
 --
 
 INSERT INTO `usuarios` (`id`, `nombre`, `email`, `password`, `intentosLogin`, `id_rol`, `estado`, `ultimo_intento`) VALUES
-(1, 'Andrey Mantilla Leon', 'andrey@gmail.com', '', 2, 1, 1, NULL),
-(10, 'pruebasCompras', 'compras@gmail.com', '$2y$10$27ykknVeCb23Gua1dIY4tutT0imZkKzoEfa3LZZ.WqoeLw/zrKqVS', 0, 4, 1, NULL),
-(11, 'pruebasVentas', 'ventas@gmail.com', '$2y$10$sed34Ukk31jiBcfsDuk2muu7ponGaUTzWC3RMrHLNJsW2ANqqgX..', 0, 3, 1, NULL),
-(12, 'pruebasInventario', 'inventario@gmail.com', '$2y$10$OLISX/THF.u18FgETxcei.B.HHAFOpd/Q39LeSSEJu5JWgcBfd.EO', 0, 5, 1, NULL),
-(13, 'Invitado', 'invitado@gmail.com', '$2y$10$LefQk/gm2tHLiuxolKscAOAFenR6Ek2XRejm1LF7ffNSEbHSqv28O', 0, 3, 3, NULL),
-(14, 'Admin', 'admin@gmail.com', '$2y$10$ql2XAqO8oZQWTeeXpPLB3.Y03U0i383t7b/dsBqzbzdQPS8VsJ2Ii', 0, 1, 1, NULL),
-(19, 'admin2', 'admin2@gmail.com', '$2y$10$vthjZViQ8FDCXq9RJWzhjOhE2igLcNUQUBt1WEzHZ.hZq4XpNXCeW', 0, 2, 1, NULL),
-(20, 'Andrey2', 'andrey2@gmail.com', '$2y$10$alssf1nNOiV1PhChwnLVPeWnljXKs0TmMLEwriU8OhO5Jc7fNwa1u', 0, 6, 1, NULL),
-(21, 'Patricio', 'patricio@gmail.com', '$2y$10$FJ8XP/4PYGOwWsxzYWysh.UX5mTgRsLU8ws9eUzHDOkk527d2VzUe', 0, 3, 1, NULL),
-(23, 'Alex', 'alex@gmail.com', '$2y$10$367.GKICRCWX9cmew3cZu.gouvmKghDkOflInZQEsj2ehRHZ/SmL.', 0, 2, 3, NULL),
-(24, 'adasd', 'andreys@gmail.com', '$2y$10$y1xjYuiOB6Ixam.7Oq3kN.6Yo3ZMF7ByjoH8W9e5QcNlrBZqwudSa', 0, 6, 1, NULL);
+(1, 'Andrey Mantilla', 'admin@gmail.com', '$2y$10$WVhZnzeQPxBNz4CytBHGr.ojlHt0amehc3/3tws7d7ZB7qtWYtYc2', 0, 1, 1, NULL),
+(2, 'Invitado', 'invitado@gmail.com', '$2y$10$xdre1wS2JiFg9b5wvStoqeJxbygNcrCgPtmPrb8XZKcCUbUcWPWc.', 0, 6, 1, NULL),
+(3, 'dsadas', 'andreysss@gmail.com', '$2y$10$rlkzfW5DZDc0MI.md5/beeEgu2Dl7IpfTgszI4uHkBFspgZzjDQpu', 0, 5, 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -287,7 +280,7 @@ ALTER TABLE `ventas`
 -- AUTO_INCREMENT de la tabla `clientes`
 --
 ALTER TABLE `clientes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `compras`
@@ -317,7 +310,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `ventas`

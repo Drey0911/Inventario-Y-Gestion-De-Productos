@@ -10,7 +10,6 @@ if (!isset($_SESSION['usuario'])) {
 }
 
 $id_rol = $_SESSION['id_rol'];
-
 $roles_permitidos = [1, 2, 5];
 
 if (!in_array($id_rol, $roles_permitidos)) {
@@ -20,7 +19,6 @@ if (!in_array($id_rol, $roles_permitidos)) {
 
 // Tiempo de inactividad de la sesion
 $tiempo_inactividad = 2700;
-
 
 if (isset($_SESSION['ultimo_movimiento'])) {
     $tiempo_transcurrido = time() - $_SESSION['ultimo_movimiento'];
@@ -42,8 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $correo = $_POST['correo'];
     $direccion = $_POST['direccion'];
 
-
-    //Manejo de verificacion de datos duplicados unicos
+    // Manejo de verificacion de datos duplicados unicos
     $sql_verificar = "SELECT * FROM clientes WHERE (DNI = ? OR correo = ? OR (telefono = ? AND telefono != ''))";
     $stmt_verificar = $conn->prepare($sql_verificar);
     $stmt_verificar->bind_param("sss", $DNI, $correo, $telefono);
@@ -51,165 +48,176 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $resultado_verificacion = $stmt_verificar->get_result();
     
     if ($resultado_verificacion->num_rows > 0) {
-        // Verificar cuál campo está duplicado
         $row = $resultado_verificacion->fetch_assoc();
         
         if ($row['DNI'] == $DNI) {
-            $alerta= "Error: El DNI ya existe en la base de datos.<br>";
+            $alerta = "Error: El DNI ya existe en la base de datos";
         }
         if ($row['correo'] == $correo) {
-            $alerta= "Error: El correo ya existe en la base de datos.<br>";
+            $alerta = "Error: El correo ya existe en la base de datos";
         }
         if ($row['telefono'] == $telefono && $telefono != "") {
-            $alerta= "Error: El teléfono ya existe en la base de datos.<br>";
+            $alerta = "Error: El teléfono ya existe en la base de datos";
         }
-    }
-     else {
-
-    $sql = "INSERT INTO clientes (nombre, apellido, DNI, ciudad, telefono, correo, direccion) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-
-    $stmt->bind_param("sssssss", $nombre, $apellido, $DNI, $ciudad, $telefono, $correo, $direccion);
-
-    if ($stmt->execute()) {
-        header('Location: clientes_READ.php?success=1');
-        exit();
     } else {
-        echo "Error: " . $stmt->error;
+        $sql = "INSERT INTO clientes (nombre, apellido, DNI, ciudad, telefono, correo, direccion) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("sssssss", $nombre, $apellido, $DNI, $ciudad, $telefono, $correo, $direccion);
+
+        if ($stmt->execute()) {
+            header('Location: clientes_READ.php?success=1');
+            exit();
+        } else {
+            echo "Error: " . $stmt->error;
+        }
+        $stmt->close();
     }
-    $stmt->close();
-}
 }
 $conn->close();
 ?>
 
-
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <title>Creación De Clientes</title>
-    <style>
-        body {
-            font-size: 20px;
-        }
-
-        h1 {
-            font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
-            font-size: 55px;
-        }
-
-        h3 {
-            font-size: 30px;
-        }
-
-        #alerta {
-            transition: opacity 0.6s ease;
-        }
-
-        #alerta.fade-out {
-            opacity: 0;
-            visibility: hidden;
-        }
-    </style>
-    <script>
-        // Definir el tiempo máximo de inactividad en milisegundos
-        var tiempoInactividad = 2700000; // 45 minutos
-
-        // Variable para almacenar el temporizador
-        var temporizadorInactividad;
-
-        // Función que redirige a logout.php cuando el tiempo de inactividad ha pasado
-        function cerrarSesion() {
-            window.location.href = 'logout.php?error=2'; // Redirigir a logout.php con error de sesión expirada
-        }
-
-        // Función para reiniciar el temporizador
-        function reiniciarTemporizador() {
-            // Limpiar el temporizador anterior
-            clearTimeout(temporizadorInactividad);
-            // Iniciar un nuevo temporizador
-            temporizadorInactividad = setTimeout(cerrarSesion, tiempoInactividad);
-        }
-
-        // Detectar eventos de actividad del usuario
-        window.onload = reiniciarTemporizador; // Al cargar la página
-        document.onmousemove = reiniciarTemporizador; // Al mover el mouse
-        document.onkeypress = reiniciarTemporizador; // Al pulsar una tecla
-        document.onclick = reiniciarTemporizador; // Al hacer clic
-        document.onscroll = reiniciarTemporizador; // Al hacer scroll
-    </script>
+    <title>Crear Nuevo Cliente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/Styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+<body class="min-h-screen text-gray-100">
+    <!-- Barra de navegación -->
+    <nav class="bg-gray-800 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <span class="text-xl font-bold gradient-text">INVDrey</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="clientes_READ.php" class="text-gray-300 hover:text-white flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Volver
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-<header>
-    <br>
-    <h1 class="text-center">Añadir Nuevo Cliente</h1>
-</header>
-<div class="mb-3">
-    <center><a href="clientes_READ.php" class="btn btn-primary btn-sm">Volver Lista Clientes<a></center>
-</div>
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold gradient-text">Crear Nuevo Cliente</h1>
+            <p class="text-gray-400">Complete el formulario para registrar un nuevo cliente</p>
+        </div>
 
-<body>
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-6 col-md-10 col-sm-12"> <!-- tamaño -->
-                <form method="post" action="" class="mt-1 p-4 border rounded bg-light">
-                <?php if ($alerta): ?>
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert" id="alerta">
-                            <?php echo $alerta; ?>
-                        </div>
-                        <script>
+        <?php if ($alerta): ?>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: '<?php echo $alerta ?>',
+                    background: '#1f2937',
+                    color: '#fff',
+                    confirmButtonColor: '#7f29c2',
+                    timer: 3000,
+                    timerProgressBar: true,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false
+                });
+            });
+        </script>
+        <?php endif; ?>
 
-                            setTimeout(function() {
-                                var alerta = document.getElementById("alerta");
-                                if (alerta) {
-                                    alerta.style.opacity = '0'; // Transición a invisible
-                                    setTimeout(function() {
-                                        alerta.style.display = 'none'; // Ocultar después de la transición
-                                    }, 600); // Tiempo que dura la animación de desvanecimiento
-                                }
-                            }, 2500); // Tiempo antes de desvanecer
-                        </script>
-                    <?php endif; ?>
-                    <div class="form-group">
-                        <label for="nombre">Nombre:</label>
-                        <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ingrese El Nombre" required>
+        <div class="flex justify-center">
+            <div class="w-full max-w-md">
+                <form method="post" action="" class="bg-gray-800 shadow-lg rounded-lg p-6 border border-gray-700">
+                    <div class="mb-6">
+                        <label for="nombre" class="block text-sm font-medium text-gray-300 mb-2">Nombre</label>
+                        <input type="text" id="nombre" name="nombre" required
+                               class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                               placeholder="Ingrese el nombre">
                     </div>
-                    <div class="form-group">
-                        <label for="apellido">Apellido:</label>
-                        <input type="text" class="form-control" id="apellido" name="apellido" placeholder="Ingrese El Apellido (Opcional)">
+                    <div class="mb-6">
+                        <label for="apellido" class="block text-sm font-medium text-gray-300 mb-2">Apellido</label>
+                        <input type="text" id="apellido" name="apellido"
+                               class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                               placeholder="Ingrese el apellido (opcional)">
                     </div>
-                    <div class="form-group">
-                        <label for="DNI">DNI:</label>
-                        <input type="number" class="form-control" id="DNI" name="DNI" placeholder="Ingrese El DNI" required>
+                    <div class="mb-6">
+                        <label for="DNI" class="block text-sm font-medium text-gray-300 mb-2">DNI</label>
+                        <input type="number" id="DNI" name="DNI" required
+                               class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                               placeholder="Ingrese el DNI">
                     </div>
-                    <div class="form-group">
-                        <label for="ciudad">Ciudad:</label>
-                        <input type="text" class="form-control" id="ciudad" name="ciudad" placeholder="Ingrese La Ciudad" required>
+                    <div class="mb-6">
+                        <label for="ciudad" class="block text-sm font-medium text-gray-300 mb-2">Ciudad</label>
+                        <input type="text" id="ciudad" name="ciudad" required
+                               class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                               placeholder="Ingrese la ciudad">
                     </div>
-                    <div class="form-group">
-                        <label for="telefono">Teléfono:</label>
-                        <input type="number" class="form-control" id="telefono" name="telefono" placeholder="Ingrese El Telefono (Opcional)">
+                    <div class="mb-6">
+                        <label for="telefono" class="block text-sm font-medium text-gray-300 mb-2">Teléfono</label>
+                        <input type="number" id="telefono" name="telefono"
+                               class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                               placeholder="Ingrese el teléfono (opcional)">
                     </div>
-                    <div class="form-group">
-                        <label for="correo">Correo:</label>
-                        <input type="email" class="form-control" id="correo" name="correo" placeholder="Ingrese El Correo" required>
+                    <div class="mb-6">
+                        <label for="correo" class="block text-sm font-medium text-gray-300 mb-2">Correo</label>
+                        <input type="email" id="correo" name="correo" required
+                               class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                               placeholder="Ingrese el correo">
                     </div>
-                    <div class="form-group">
-                        <label for="direccion">Dirección:</label>
-                        <input type="text" class="form-control" id="direccion" name="direccion" placeholder="Ingrese La Direccion" required>
+                    <div class="mb-6">
+                        <label for="direccion" class="block text-sm font-medium text-gray-300 mb-2">Dirección</label>
+                        <input type="text" id="direccion" name="direccion" required
+                               class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                               placeholder="Ingrese la dirección">
                     </div>
-                    <button type="submit" class="btn btn-success btn-block">Añadir</button>
+                    <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                        Registrar Cliente
+                    </button>
                 </form>
             </div>
         </div>
-    </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+    </main>
 
+    <script>
+        // Temporizador de inactividad
+        var tiempoInactividad = 2700000; // 45 minutos
+        var temporizadorInactividad;
+
+        function cerrarSesion() {
+            Swal.fire({
+                title: 'Sesión expirada',
+                text: 'Tu sesión ha expirado por inactividad',
+                icon: 'warning',
+                confirmButtonColor: '#7f29c2',
+                background: '#1f2937',
+                color: '#fff',
+                confirmButtonText: 'Entendido'
+            }).then((result) => {
+                window.location.href = '../logout.php?error=2';
+            });
+        }
+
+        function reiniciarTemporizador() {
+            clearTimeout(temporizadorInactividad);
+            temporizadorInactividad = setTimeout(cerrarSesion, tiempoInactividad);
+        }
+
+        window.onload = reiniciarTemporizador;
+        document.onmousemove = reiniciarTemporizador;
+        document.onkeypress = reiniciarTemporizador;
+        document.onclick = reiniciarTemporizador;
+        document.onscroll = reiniciarTemporizador;
+    </script>
+</body>
 </html>

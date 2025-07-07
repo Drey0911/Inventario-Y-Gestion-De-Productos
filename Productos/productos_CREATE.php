@@ -35,148 +35,157 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $nombre = $_POST['nombre'];
     $stock = $_POST['stock'];
     $precio_unitario = $_POST['precio_unitario'];
-    $desc = $_POST['desc'];
+    $descripcion = $_POST['descripcion'];
 
-   //Manejo de verificacion de datos duplicados unicos
-   $sql_verificar = "SELECT * FROM productos WHERE (nombre = ?)";
-   $stmt_verificar = $conn->prepare($sql_verificar);
-   $stmt_verificar->bind_param("s", $nombre);
-   $stmt_verificar->execute();
-   $resultado_verificacion = $stmt_verificar->get_result();
-   
-   if ($resultado_verificacion->num_rows > 0) {
-       // Verificar cuál campo está duplicado
-       $row = $resultado_verificacion->fetch_assoc();
-       
-       if ($row['nombre'] == $nombre) {
-           $alerta= "Error: Este producto ya existe en la base de datos.<br>";
-       }
-   } else {
-    // Usar Prepared Statements
-    $sql = "INSERT INTO productos (nombre, stock, precio_unitario, descripcion) VALUES (?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sids", $nombre, $stock, $precio_unitario, $desc);
-
-    if ($stmt->execute()) {
-        header('Location: productos_READ.php?success=1');
-        exit();
+    // Verificar datos duplicados
+    $sql_verificar = "SELECT * FROM productos WHERE nombre = ?";
+    $stmt_verificar = $conn->prepare($sql_verificar);
+    $stmt_verificar->bind_param("s", $nombre);
+    $stmt_verificar->execute();
+    $resultado_verificacion = $stmt_verificar->get_result();
+    
+    if ($resultado_verificacion->num_rows > 0) {
+        $alerta = "Error: Este producto ya existe en la base de datos";
     } else {
-        echo "Error: " . $stmt->error;
+        $sql = "INSERT INTO productos (nombre, stock, precio_unitario, descripcion) VALUES (?, ?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("sids", $nombre, $stock, $precio_unitario, $descripcion);
+
+        if ($stmt->execute()) {
+            header('Location: productos_READ.php?success=1');
+            exit();
+        } else {
+            echo "Error: " . $stmt->error;
+        }
+        $stmt->close();
     }
 }
-}
+$conn->close();
 ?>
-
 
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <title>Creación De productos</title>
-    <style>
-        body {
-            font-size: 20px;
-        }
-        h1 {
-            font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
-            font-size: 55px;
-        }
-        h3 {
-            font-size: 30px;
-        }
-        #alerta {
-            transition: opacity 0.6s ease;
-        }
-
-        #alerta.fade-out {
-            opacity: 0;
-            visibility: hidden;
-        }
-    </style>
-     <script>
-        // Definir el tiempo máximo de inactividad en milisegundos
-        var tiempoInactividad = 2700000; // 45 minutos
-
-        // Variable para almacenar el temporizador
-        var temporizadorInactividad;
-
-        // Función que redirige a logout.php cuando el tiempo de inactividad ha pasado
-        function cerrarSesion() {
-            window.location.href = 'logout.php?error=2'; // Redirigir a logout.php con error de sesión expirada
-        }
-
-        // Función para reiniciar el temporizador
-        function reiniciarTemporizador() {
-            // Limpiar el temporizador anterior
-            clearTimeout(temporizadorInactividad);
-            // Iniciar un nuevo temporizador
-            temporizadorInactividad = setTimeout(cerrarSesion, tiempoInactividad);
-        }
-
-        // Detectar eventos de actividad del usuario
-        window.onload = reiniciarTemporizador; // Al cargar la página
-        document.onmousemove = reiniciarTemporizador; // Al mover el mouse
-        document.onkeypress = reiniciarTemporizador; // Al pulsar una tecla
-        document.onclick = reiniciarTemporizador; // Al hacer clic
-        document.onscroll = reiniciarTemporizador; // Al hacer scroll
-    </script>
+    <title>Crear Nuevo Producto</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/Styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+<body class="min-h-screen text-gray-100">
+    <!-- Barra de navegación -->
+    <nav class="bg-gray-800 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <span class="text-xl font-bold gradient-text">INVDrey</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="productos_READ.php" class="text-gray-300 hover:text-white flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Volver
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-<header>
-    <br>
-    <h1 class="text-center">Añadir Nuevo Producto</h1>
-</header>
-<div class="mb-3">
-<center><a href="productos_READ.php" class="btn btn-primary btn-sm">Volver Lista Productos<a></center>
-</div>
-<body>
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-6 col-md-10 col-sm-12"> <!-- tamaño -->
-                <form method="post" action="" class="mt-1 p-4 border rounded bg-light">
-                <?php if ($alerta): ?>
-    <div class="alert alert-danger alert-dismissible fade show" role="alert" id="alerta">
-        <?php echo $alerta; ?>
-    </div>
-    <script>
-        // Function to hide the alert
-        setTimeout(function() {
-            var alerta = document.getElementById("alerta");
-            if (alerta) {
-                alerta.style.opacity = '0'; // Transición a invisible
-                setTimeout(function() {
-                    alerta.style.display = 'none'; // Ocultar después de la transición
-                }, 600); // Tiempo que dura la animación de desvanecimiento
-            }
-        }, 2500); // Tiempo antes de desvanecer
-    </script>
-<?php endif; ?>
-                    <div class="form-group">
-                        <label for="nombre">Nombre:</label>
-                        <input type="text" class="form-control" id="nombre" name="nombre" placeholder ="Ingrese El Nombre" required>
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold gradient-text">Crear Nuevo Producto</h1>
+            <p class="text-gray-400">Complete el formulario para registrar un nuevo producto</p>
+        </div>
+
+        <?php if ($alerta): ?>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: '<?php echo $alerta ?>',
+                    background: '#1f2937',
+                    color: '#fff',
+                    confirmButtonColor: '#7f29c2',
+                    timer: 3000,
+                    timerProgressBar: true,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false
+                });
+            });
+        </script>
+        <?php endif; ?>
+
+        <div class="flex justify-center">
+            <div class="w-full max-w-md">
+                <form method="post" action="" class="bg-gray-800 shadow-lg rounded-lg p-6 border border-gray-700">
+                    <div class="mb-6">
+                        <label for="nombre" class="block text-sm font-medium text-gray-300 mb-2">Nombre</label>
+                        <input type="text" id="nombre" name="nombre" required
+                               class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                               placeholder="Ingrese el nombre del producto">
                     </div>
-                    <div class="form-group">
-                        <label for="stock">Stock:</label>
-                        <input type="number" class="form-control" id="stock" name="stock" placeholder ="Ingrese El Stock" required>
+                    <div class="mb-6">
+                        <label for="stock" class="block text-sm font-medium text-gray-300 mb-2">Stock</label>
+                        <input type="number" id="stock" name="stock" required min="0"
+                               class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                               placeholder="Ingrese la cantidad en stock">
                     </div>
-                    <div class="form-group">
-                        <label for="precio_unitario">Precio Unitario:</label>
-                        <input type="number" class="form-control" id="precio_unitario" name="precio_unitario" placeholder ="Ingrese El Precio Unitario" required>
+                    <div class="mb-6">
+                        <label for="precio_unitario" class="block text-sm font-medium text-gray-300 mb-2">Precio Unitario</label>
+                        <input type="number" id="precio_unitario" name="precio_unitario" required min="0" step="0.01"
+                               class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                               placeholder="Ingrese el precio unitario">
                     </div>
-                    <div class="form-group">
-                        <label for="desc">Descripcion:</label>
-                        <input type="text" class="form-control" id="desc" name="desc" placeholder ="Ingrese La Descripcion" required>
+                    <div class="mb-6">
+                        <label for="descripcion" class="block text-sm font-medium text-gray-300 mb-2">Descripción</label>
+                        <input type="text" id="descripcion" name="descripcion" required
+                               class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                               placeholder="Ingrese la descripción del producto">
                     </div>
-                    <button type="submit" class="btn btn-success btn-block">Añadir</button>
+                    <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                        Registrar Producto
+                    </button>
                 </form>
             </div>
         </div>
-    </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+    </main>
 
+    <script>
+        // Temporizador de inactividad
+        var tiempoInactividad = 2700000; // 45 minutos
+        var temporizadorInactividad;
+
+        function cerrarSesion() {
+            Swal.fire({
+                title: 'Sesión expirada',
+                text: 'Tu sesión ha expirado por inactividad',
+                icon: 'warning',
+                confirmButtonColor: '#7f29c2',
+                background: '#1f2937',
+                color: '#fff',
+                confirmButtonText: 'Entendido'
+            }).then((result) => {
+                window.location.href = '../logout.php?error=2';
+            });
+        }
+
+        function reiniciarTemporizador() {
+            clearTimeout(temporizadorInactividad);
+            temporizadorInactividad = setTimeout(cerrarSesion, tiempoInactividad);
+        }
+
+        window.onload = reiniciarTemporizador;
+        document.onmousemove = reiniciarTemporizador;
+        document.onkeypress = reiniciarTemporizador;
+        document.onclick = reiniciarTemporizador;
+        document.onscroll = reiniciarTemporizador;
+    </script>
+</body>
 </html>

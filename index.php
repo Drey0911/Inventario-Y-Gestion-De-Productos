@@ -6,14 +6,13 @@ $alerta = "";
 $tipo_alerta = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
     if (empty($_POST["usuario"]) || empty($_POST["pass"])) {
         $alerta = "Los Campos están vacíos";
+        $tipo_alerta = "error";
     } else {
         $usuario = $conn->real_escape_string($_POST["usuario"]);
         $clave = $conn->real_escape_string($_POST["pass"]);
 
-        // Consulta para obtener la información del usuario, incluyendo estado, intentos de login y último intento
         $stmt = $conn->prepare("SELECT id_rol, nombre, password, intentosLogin, estado, ultimo_intento FROM usuarios WHERE email=?");
         $stmt->bind_param('s', $usuario);
         $stmt->execute();
@@ -26,61 +25,52 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $estado = $datos->estado;
             $ultimo_intento = $datos->ultimo_intento;
 
-            // Verificar si han pasado 10 minutos desde el último intento fallido para reiniciar los intentos
             $tiempo_actual = time();
             $tiempo_ultimo_intento = strtotime($ultimo_intento);
 
             if ($ultimo_intento && ($tiempo_actual - $tiempo_ultimo_intento) >= 600) { 
-                // Reiniciar intentos a 0
                 $intentos = 0;
                 $stmt_reset_intentos = $conn->prepare("UPDATE usuarios SET intentosLogin = 0 WHERE email = ?");
                 $stmt_reset_intentos->bind_param('s', $usuario);
                 $stmt_reset_intentos->execute();
             }
 
-            // Verificar si el usuario está bloqueado
             if ($estado == 3) {
-                $tipo_alerta = "danger";
+                $tipo_alerta = "error";
                 $alerta = "Usuario bloqueado, Solicite desbloqueo con un administrador";
             } else {
-                // Verificar si la contraseña ingresada coincide con el hash
                 if (password_verify($clave, $password_encriptada)) {
-                    // Restablecer los intentos fallidos a 0 después de un inicio de sesión exitoso
                     $stmt_reset = $conn->prepare("UPDATE usuarios SET intentosLogin = 0, ultimo_intento = NULL WHERE email = ?");
                     $stmt_reset->bind_param('s', $usuario);
                     $stmt_reset->execute();
 
-                    // La contraseña es correcta
                     $_SESSION['usuario'] = $datos->nombre;
                     $_SESSION['id_rol'] = $datos->id_rol;
-                    header("location:inicio.php"); // Redirige a la página de inicio
+                    header("location:inicio.php");
                     exit();
                 } else {
-                    // Incrementar el contador de intentos fallidos y registrar el último intento
                     $intentos++;
                     $stmt_update = $conn->prepare("UPDATE usuarios SET intentosLogin = ?, ultimo_intento = NOW() WHERE email = ?");
                     $stmt_update->bind_param('is', $intentos, $usuario);
                     $stmt_update->execute();
 
                     if ($intentos >= 5) {
-                        // Bloquear el usuario si supera los 5 intentos fallidos
                         $stmt_block = $conn->prepare("UPDATE usuarios SET estado = 3 WHERE email = ?");
                         $stmt_block->bind_param('s', $usuario);
                         $stmt_block->execute();
 
-                        $tipo_alerta = "danger";
+                        $tipo_alerta = "error";
                         $alerta = "Usuario bloqueado tras múltiples intentos fallidos";
                     } else {
-                        // Mostrar advertencias progresivas
                         if ($intentos == 4) {
                             $tipo_alerta = "warning";
                             $alerta = "Acceso Denegado. Un intento más y su cuenta será bloqueada";
                         } else {
                             if ($intentos == 1) {
-                                $tipo_alerta = "danger";
+                                $tipo_alerta = "error";
                                 $alerta = "Acceso Denegado.";
                             } else {
-                                $tipo_alerta = "danger";
+                                $tipo_alerta = "error";
                                 $alerta = "Acceso Denegado. Intentos fallidos: $intentos";
                             }
                         }
@@ -88,18 +78,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             }
         } else {
-            // No se encontró el usuario
-            $tipo_alerta = "danger";
+            $tipo_alerta = "error";
             $alerta = "Error, Usuario No Existente";
         }
     }
 }
 
-// Manejo de mensajes de error y éxito
 if (isset($_GET['error']) || isset($_GET['success'])) {
     if (isset($_GET['error'])) {
         if ($_GET['error'] == 1) {
-            $tipo_alerta = "danger";
+            $tipo_alerta = "error";
             $alerta = "Permiso Denegado";
         } else if ($_GET['error'] == 2) {
             $tipo_alerta = "warning";
@@ -122,115 +110,138 @@ if (isset($_GET['error']) || isset($_GET['success'])) {
 
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>INVDrey - Inicio De Sesion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body {
-            background-image: url('Imagenes/fondo_login.png');
-            background-size: cover;
-            background-position: center;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         }
-
-        .login-container {
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 50px;
-            border-radius: 15px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-            width: 400px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        .gradient-text {
+            background: linear-gradient(90deg, #7f29c2 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
-
-        .login-container:hover {
-            transform: scale(1.1);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        .btn-primary {
+            background: linear-gradient(90deg, #7f29c2 0%, #a855f7 100%);
+            transition: all 0.3s ease;
         }
-
-        .user-image {
-            display: block;
-            margin: 0 auto 20px;
-            width: 120px;
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(127, 41, 194, 0.3);
         }
-
-        .form-label {
-            font-size: 1.1em;
-        }
-
-        .form-control {
-            font-size: 1.1em;
-        }
-
-        .ingresar-btn {
-            font-size: 1.2em;
-        }
-
-        .register-link {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        #alerta {
-            transition: opacity 0.6s ease;
-        }
-
-        #alerta.fade-out {
-            opacity: 0;
-            visibility: hidden;
+        .input-field:focus {
+            border-color: #7f29c2;
+            box-shadow: 0 0 0 3px rgba(127, 41, 194, 0.2);
         }
     </style>
 </head>
-
-<body>
-
-    <div class="login-container">
-
-
-        <img src="Imagenes/usu.png" alt="Usuario" class="user-image">
-
-        <?php if ($alerta): ?>
-            <div class="alert alert-<?php echo $tipo_alerta; ?> alert-dismissible fade show" role="alert" id="alerta">
-                <?php echo $alerta; ?>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-gray-800 rounded-xl shadow-2xl overflow-hidden transition-all duration-300 hover:shadow-purple-500/20">
+        <div class="p-8">
+            <div class="text-center mb-8">
+                <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gray-700 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+                <h2 class="text-3xl font-bold text-white">Bienvenido</h2>
+                <p class="text-gray-400 mt-2">Inicia sesión para continuar</p>
             </div>
-            <script>
-                // Function to hide the alert
-                setTimeout(function() {
-                    var alerta = document.getElementById("alerta");
-                    if (alerta) {
-                        alerta.style.opacity = '0'; // Transición a invisible
-                        setTimeout(function() {
-                            alerta.style.display = 'none'; // Ocultar después de la transición
-                        }, 600); // Tiempo que dura la animación de desvanecimiento
-                    }
-                }, 2500); // Tiempo antes de desvanecer
-            </script>
-        <?php endif; ?>
 
-        <form method="post" id="loginForm" action="">
-            <div class="mb-4">
-                <label for="usuario" class="form-label">Usuario</label>
-                <input placeholder="Ingrese Su Correo" type="email" class="form-control" id="usuario" name="usuario" required>
-            </div>
-            <div class="mb-4">
-                <label for="pass" class="form-label">Contraseña</label>
-                <input placeholder="Ingrese Su Contraseña" type="password" class="form-control" id="pass" name="pass" required>
-            </div>
-            <button type="submit" name="btningresar" class="btn btn-primary w-100 ingresar-btn">Ingresar</button>
-        </form>
+            <form method="post" id="loginForm" class="space-y-6">
+                <div>
+                    <label for="usuario" class="block text-sm font-medium text-gray-300 mb-1">Correo electrónico</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <input type="email" id="usuario" name="usuario" required 
+                               class="input-field pl-10 w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                               placeholder="tucorreo@ejemplo.com">
+                    </div>
+                </div>
 
-        <div class="register-link">
-            <p>¿No tienes una cuenta? <a href="registro.php">Regístrate aquí</a></p>
+                <div>
+    <label for="pass" class="block text-sm font-medium text-gray-300 mb-1">Contraseña</label>
+    <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+        </div>
+        <input type="password" id="pass" name="pass" required 
+               class="input-field pl-10 pr-10 w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+               placeholder="••••••••">
+        <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center" onclick="togglePassword('pass')">
+            <svg id="eye-icon-pass" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 hover:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+        </button>
+    </div>
+</div>
+
+                <div>
+                    <button type="submit" name="btningresar" 
+                            class="btn-primary w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                        Iniciar sesión
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-400">
+                    ¿No tienes una cuenta? 
+                    <a href="registro.php" class="font-medium text-purple-400 hover:text-purple-300">Regístrate aquí</a>
+                </p>
+            </div>
         </div>
     </div>
-
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        const eyeIcon = document.getElementById(`eye-icon-${inputId}`);
+        
+        if (input.type === "password") {
+            input.type = "text";
+            eyeIcon.innerHTML = `
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+            `;
+        } else {
+            input.type = "password";
+            eyeIcon.innerHTML = `
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            `;
+        }
+    }
+</script>
+    <?php if ($alerta): ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                icon: '<?php echo $tipo_alerta ?>',
+                title: '<?php echo $alerta ?>',
+                background: '#1f2937',
+                color: '#fff',
+                confirmButtonColor: '#7f29c2',
+                timer: 3000,
+                timerProgressBar: true,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false
+            });
+        });
+    </script>
+    <?php endif; ?>
 </body>
 </html>

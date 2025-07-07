@@ -1,85 +1,72 @@
 <?php
 session_start();
 include '../conexion.php';
-$id = $_GET['id'];
 
-// Acceso de roles
+// Verificar si es una petición AJAX
+$isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+          strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+
+if (!$isAjax) {
+    // Si no es AJAX, redirigir o manejar como antes
+    header("Location: productos_READ.php");
+    exit();
+}
+
+header('Content-Type: application/json');
+
+// Validar acceso
 if (!isset($_SESSION['usuario'])) {
-    header("Location: ../logout.php");
+    echo json_encode(['success' => false, 'message' => 'Acceso no autorizado']);
     exit();
 }
 
 $id_rol = $_SESSION['id_rol'];
-$roles_permitidos = [1, 2, 5];
+$roles_permitidos = [1, 2, 5]; 
 
 if (!in_array($id_rol, $roles_permitidos)) {
-    header("Location: ../logout.php?error=1");
+    echo json_encode(['success' => false, 'message' => 'Permisos insuficientes']);
     exit();
 }
 
-// Tiempo de inactividad de la sesión
-$tiempo_inactividad = 2700;
+// Obtener ID del producto a eliminar
+$id = isset($_POST['id']) ? intval($_POST['id']) : 0;
 
-if (isset($_SESSION['ultimo_movimiento'])) {
-    $tiempo_transcurrido = time() - $_SESSION['ultimo_movimiento'];
-
-    if ($tiempo_transcurrido > $tiempo_inactividad) {
-        header("Location: ../logout.php?error=2");
-        exit();
-    }
+if ($id <= 0) {
+    echo json_encode(['success' => false, 'message' => 'ID inválido']);
+    exit();
 }
 
-$_SESSION['ultimo_movimiento'] = time();
-
-if (isset($id)) {
-    // Usar Prepared Statements
-    $sql = "UPDATE productos SET estado = 0 WHERE id = ?";
-    $stmt = $conn->prepare($sql);
+try {
+    // Primero verificamos si el producto existe
+    $check = $conn->prepare("SELECT id FROM productos WHERE id = ? AND estado = 1");
+    $check->bind_param("i", $id);
+    $check->execute();
+    $check->store_result();
+    
+    if ($check->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'El producto no existe o ya fue eliminado']);
+        exit();
+    }
+    
+    // Eliminar el producto (cambiar estado a 0)
+    $stmt = $conn->prepare("UPDATE productos SET estado = 0 WHERE id = ?");
     $stmt->bind_param("i", $id);
-
+    
     if ($stmt->execute()) {
-        header('Location: productos_READ.php?success=3');
-        exit();
+        // Verificar si realmente se eliminó
+        if ($stmt->affected_rows > 0) {
+            echo json_encode(['success' => true, 'message' => 'Producto eliminado con éxito']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No se pudo eliminar el producto']);
+        }
     } else {
-        echo "Error: " . $stmt->error;
+        echo json_encode(['success' => false, 'message' => 'Error al ejecutar la consulta']);
     }
-} else {
-    header('Location: productos_READ.php?error=ID no válido');
-    exit();
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+} finally {
+    if (isset($stmt)) $stmt->close();
+    if (isset($check)) $check->close();
+    $conn->close();
 }
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>
-        // Definir el tiempo máximo de inactividad en milisegundos
-        var tiempoInactividad = 2700000; // 45 minutos
-
-        // Variable para almacenar el temporizador
-        var temporizadorInactividad;
-
-        // Función que redirige a logout.php cuando el tiempo de inactividad ha pasado
-        function cerrarSesion() {
-            window.location.href = 'logout.php?error=2'; // Redirigir a logout.php con error de sesión expirada
-        }
-
-        // Función para reiniciar el temporizador
-        function reiniciarTemporizador() {
-            // Limpiar el temporizador anterior
-            clearTimeout(temporizadorInactividad);
-            // Iniciar un nuevo temporizador
-            temporizadorInactividad = setTimeout(cerrarSesion, tiempoInactividad);
-        }
-
-        // Detectar eventos de actividad del usuario
-        window.onload = reiniciarTemporizador; // Al cargar la página
-        document.onmousemove = reiniciarTemporizador; // Al mover el mouse
-        document.onkeypress = reiniciarTemporizador; // Al pulsar una tecla
-        document.onclick = reiniciarTemporizador; // Al hacer clic
-        document.onscroll = reiniciarTemporizador; // Al hacer scroll
-    </script>
-</head>
-</html>

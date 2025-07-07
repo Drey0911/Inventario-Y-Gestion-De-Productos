@@ -1,6 +1,7 @@
 <?php
 session_start();
 include '../conexion.php';
+$alerta = "";
 
 // Acceso permitido de ciertos roles
 if (!isset($_SESSION['usuario'])) {
@@ -19,7 +20,6 @@ if (!in_array($id_rol, $roles_permitidos)) {
 // Tiempo de inactividad de la sesion
 $tiempo_inactividad = 2700;
 
-
 if (isset($_SESSION['ultimo_movimiento'])) {
     $tiempo_transcurrido = time() - $_SESSION['ultimo_movimiento'];
 
@@ -33,7 +33,6 @@ $_SESSION['ultimo_movimiento'] = time();
 
 $precio_unitario = 0;
 $total = 0;
-$error = "";
 $id_cliente = "";
 $id_producto = "";
 $cantidad = 0;
@@ -58,7 +57,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $total = $_POST['total'];
 
     if ($cantidad <= 0 || $id_cliente == "" || $id_producto == "") {
-        $error = "Error: Todos los campos son obligatorios y la cantidad debe ser mayor que 0.";
+        $alerta = "Error: Todos los campos son obligatorios y la cantidad debe ser mayor que 0";
     } else {
         // Verificar el stock del producto
         $sql_stock = "SELECT stock FROM productos WHERE id = ?";
@@ -69,7 +68,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $producto = $result_stock->fetch_assoc();
 
         if ($producto['stock'] < $cantidad) {
-            $error = "Error: No hay suficiente stock para realizar la venta. Stock disponible: " . $producto['stock'];
+            $alerta = "Error: No hay suficiente stock para realizar la venta. Stock disponible: " . $producto['stock'];
         } else {
             $fecha_venta = date('Y-m-d H:i:s');
             $sql_insert = "INSERT INTO ventas (id_cliente, id_producto, precio_unitario_producto, total, cantidad, fecha_venta, estado) 
@@ -84,72 +83,123 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 if ($stmt_update_stock->execute()) {
                     header('Location: ventas_READ.php?success=1');
+                    exit();
                 } else {
-                    $error = "Error al actualizar el stock: " . $conn->error;
+                    $alerta = "Error al actualizar el stock: " . $conn->error;
                 }
             } else {
-                $error = "Error al añadir la venta: " . $conn->error;
+                $alerta = "Error al añadir la venta: " . $conn->error;
             }
         }
     }
 }
 ?>
 
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            font-size: 20px;
-        }
-        h1 {
-            font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
-            font-size: 55px;
-        }
-        h3 {
-            font-size: 30px;
-        }
-        #alerta {
-            transition: opacity 0.6s ease;
-        }
+    <title>Crear Nueva Venta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/Styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="min-h-screen text-gray-100">
+    <!-- Barra de navegación -->
+    <nav class="bg-gray-800 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <span class="text-xl font-bold gradient-text">INVDrey</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="ventas_READ.php" class="text-gray-300 hover:text-white flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Volver
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-        #alerta.fade-out {
-            opacity: 0;
-            visibility: hidden;
-        }
-    </style>
-     <script>
-        // Definir el tiempo máximo de inactividad en milisegundos
-        var tiempoInactividad = 2700000; // 45 minutos
+    <!-- Contenido principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold gradient-text">Crear Nueva Venta</h1>
+            <p class="text-gray-400">Complete el formulario para registrar una nueva venta</p>
+        </div>
 
-        // Variable para almacenar el temporizador
-        var temporizadorInactividad;
+        <?php if ($alerta): ?>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: '<?php echo $alerta ?>',
+                    background: '#1f2937',
+                    color: '#fff',
+                    confirmButtonColor: '#7f29c2',
+                    timer: 3000,
+                    timerProgressBar: true,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false
+                });
+            });
+        </script>
+        <?php endif; ?>
 
-        // Función que redirige a logout.php cuando el tiempo de inactividad ha pasado
-        function cerrarSesion() {
-            window.location.href = 'logout.php?error=2'; // Redirigir a logout.php con error de sesión expirada
-        }
+        <div class="flex justify-center">
+            <div class="w-full max-w-md">
+                <form method="post" action="" class="bg-gray-800 shadow-lg rounded-lg p-6 border border-gray-700">
+                    <div class="mb-6">
+                        <label for="id_cliente" class="block text-sm font-medium text-gray-300 mb-2">Cliente</label>
+                        <select name="id_cliente" required class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="">Seleccione un cliente</option>
+                            <?php while ($row = $result_clientes->fetch_assoc()) { ?>
+                                <option value="<?php echo $row['id']; ?>"><?php echo $row['nombre_completo']; ?></option>
+                            <?php } ?>
+                        </select>
+                    </div>
 
-        // Función para reiniciar el temporizador
-        function reiniciarTemporizador() {
-            // Limpiar el temporizador anterior
-            clearTimeout(temporizadorInactividad);
-            // Iniciar un nuevo temporizador
-            temporizadorInactividad = setTimeout(cerrarSesion, tiempoInactividad);
-        }
+                    <div class="mb-6">
+                        <label for="id_producto" class="block text-sm font-medium text-gray-300 mb-2">Producto</label>
+                        <select id="producto" name="id_producto" required onchange="actualizarPrecio()" class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="">Seleccione un producto</option>
+                            <?php while ($row = $result_productos->fetch_assoc()) { ?>
+                                <option value="<?php echo $row['id']; ?>" data-precio="<?php echo $row['precio_unitario']; ?>"><?php echo $row['nombre']; ?></option>
+                            <?php } ?>
+                        </select>
+                    </div>
 
-        // Detectar eventos de actividad del usuario
-        window.onload = reiniciarTemporizador; // Al cargar la página
-        document.onmousemove = reiniciarTemporizador; // Al mover el mouse
-        document.onkeypress = reiniciarTemporizador; // Al pulsar una tecla
-        document.onclick = reiniciarTemporizador; // Al hacer clic
-        document.onscroll = reiniciarTemporizador; // Al hacer scroll
-    </script>
-    <title>Creación de Ventas</title>
+                    <div class="mb-6">
+                        <label for="cantidad" class="block text-sm font-medium text-gray-300 mb-2">Cantidad</label>
+                        <input type="number" id="cantidad" name="cantidad" min="1" value="<?php echo $cantidad; ?>" oninput="calcularTotal()" required class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="precio_unitario" class="block text-sm font-medium text-gray-300 mb-2">Precio Unitario</label>
+                        <input type="text" id="precio_unitario" name="precio_unitario" value="<?php echo $precio_unitario; ?>" readonly class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="total" class="block text-sm font-medium text-gray-300 mb-2">Total</label>
+                        <input type="text" id="total" name="total" value="<?php echo $total; ?>" readonly class="input-field w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+
+                    <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                        Registrar Venta
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
     <script>
         function actualizarPrecio() {
             var selectProducto = document.getElementById("producto");
@@ -181,80 +231,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 totalInput.value = 0;
             }
         }
+
+        // Temporizador de inactividad
+        var tiempoInactividad = 2700000; // 45 minutos
+        var temporizadorInactividad;
+
+        function cerrarSesion() {
+            Swal.fire({
+                title: 'Sesión expirada',
+                text: 'Tu sesión ha expirado por inactividad',
+                icon: 'warning',
+                confirmButtonColor: '#7f29c2',
+                background: '#1f2937',
+                color: '#fff',
+                confirmButtonText: 'Entendido'
+            }).then((result) => {
+                window.location.href = '../logout.php?error=2';
+            });
+        }
+
+        function reiniciarTemporizador() {
+            clearTimeout(temporizadorInactividad);
+            temporizadorInactividad = setTimeout(cerrarSesion, tiempoInactividad);
+        }
+
+        window.onload = reiniciarTemporizador;
+        document.onmousemove = reiniciarTemporizador;
+        document.onkeypress = reiniciarTemporizador;
+        document.onclick = reiniciarTemporizador;
+        document.onscroll = reiniciarTemporizador;
     </script>
-</head>
-<header>
-    <br>
-<h1 class="text-center">Añadir Nueva Venta</h1>
-</header>
-<div class="mb-3">
-<center><a href="ventas_READ.php" class="btn btn-primary btn-sm">Volver Lista Ventas<a></center>
-</div>
-<body>
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-6 col-md-10 col-sm-12"> <!-- tamaño -->
-                <form method="post" action="" class="mt-1 p-4 border rounded bg-light">
-                <?php if ($error): ?>
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert" id="alerta">
-                            <?php echo $error; ?>
-                        </div>
-                        <script>
-
-                            setTimeout(function() {
-                                var alerta = document.getElementById("alerta");
-                                if (alerta) {
-                                    alerta.style.opacity = '0'; // Transición a invisible
-                                    setTimeout(function() {
-                                        alerta.style.display = 'none'; // Ocultar después de la transición
-                                    }, 600); // Tiempo que dura la animación de desvanecimiento
-                                }
-                            }, 2500); // Tiempo antes de desvanecer
-                        </script>
-                    <?php endif; ?>
-                    <div class="form-group">
-                        <label for="id_cliente">Cliente:</label>
-                        <select name="id_cliente" class="form-control" required>
-                            <option value="">Seleccione un cliente</option>
-                            <?php while ($row = $result_clientes->fetch_assoc()) { ?>
-                                <option value="<?php echo $row['id']; ?>"><?php echo $row['nombre_completo']; ?></option>
-                            <?php } ?>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="id_producto">Producto:</label>
-                        <select id="producto" name="id_producto" class="form-control" onchange="actualizarPrecio()" required>
-                            <option value="">Seleccione un producto</option>
-                            <?php while ($row = $result_productos->fetch_assoc()) { ?>
-                                <option value="<?php echo $row['id']; ?>" data-precio="<?php echo $row['precio_unitario']; ?>"><?php echo $row['nombre']; ?></option>
-                            <?php } ?>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="cantidad">Cantidad:</label>
-                        <input type="number" id="cantidad" name="cantidad" class="form-control" min="1" value="<?php echo $cantidad; ?>" oninput="calcularTotal()" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="precio_unitario">Precio Unitario:</label>
-                        <input type="text" id="precio_unitario" name="precio_unitario" class="form-control" value="<?php echo $precio_unitario; ?>" readonly>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="total">Total:</label>
-                        <input type="text" id="total" name="total" class="form-control" value="<?php echo $total; ?>" readonly>
-                    </div>
-
-                    <button type="submit" class="btn btn-success btn-block">Añadir Venta</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

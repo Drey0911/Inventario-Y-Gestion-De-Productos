@@ -1,87 +1,78 @@
 <?php
 session_start();
 include '../conexion.php';
-$id = $_GET['id'];
 
-// Acceso permitido de ciertos roles
+// Verificar si es una petición AJAX
+$isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+          strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+
+if (!$isAjax) {
+    // Si no es AJAX, redirigir o manejar como antes
+    header("Location: usuarios_READ.php");
+    exit();
+}
+
+header('Content-Type: application/json');
+
+// Validar acceso
 if (!isset($_SESSION['usuario'])) {
-    header("Location: ../logout.php");
+    echo json_encode(['success' => false, 'message' => 'Acceso no autorizado']);
     exit();
 }
 
 $id_rol = $_SESSION['id_rol'];
-$roles_permitidos = [1, 2];
+$roles_permitidos = [1, 2]; 
 
 if (!in_array($id_rol, $roles_permitidos)) {
-    header("Location: ../logout.php?error=1");
+    echo json_encode(['success' => false, 'message' => 'Permisos insuficientes']);
     exit();
 }
 
-// Tiempo de inactividad de la sesion
-$tiempo_inactividad = 2700;
+// Obtener ID del usuario a eliminar
+$id = isset($_POST['id']) ? intval($_POST['id']) : 0;
 
-
-if (isset($_SESSION['ultimo_movimiento'])) {
-    $tiempo_transcurrido = time() - $_SESSION['ultimo_movimiento'];
-
-    if ($tiempo_transcurrido > $tiempo_inactividad) {
-        header("Location: ../logout.php?error=2");
-        exit();
-    }
+if ($id <= 0) {
+    echo json_encode(['success' => false, 'message' => 'ID inválido']);
+    exit();
 }
 
-$_SESSION['ultimo_movimiento'] = time();
+// Verificar que el usuario no se esté eliminando a sí mismo
+if (isset($_SESSION['id_usuario']) && $id == $_SESSION['id_usuario']) {
+    echo json_encode(['success' => false, 'message' => 'No puedes eliminarte a ti mismo']);
+    exit();
+}
 
-// Logout y desactivar usuario
-if (isset($id)) {
-    $sql = "UPDATE usuarios SET estado = 0 WHERE id = ?";
-    $stmt = $conn->prepare($sql);
+try {
+    // Primero verificamos si el usuario existe
+    $check = $conn->prepare("SELECT id FROM usuarios WHERE id = ?");
+    $check->bind_param("i", $id);
+    $check->execute();
+    $check->store_result();
+    
+    if ($check->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'El usuario no existe']);
+        exit();
+    }
+    
+    // Eliminar el usuario
+    $stmt = $conn->prepare("UPDATE usuarios SET estado = 0 WHERE id = ?");
     $stmt->bind_param("i", $id);
-
+    
     if ($stmt->execute()) {
-        header('Location: usuarios_READ.php?success=3');
-        exit();
+        // Verificar si realmente se eliminó
+        if ($stmt->affected_rows > 0) {
+            echo json_encode(['success' => true, 'message' => 'Usuario eliminado con éxito']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No se pudo eliminar el usuario']);
+        }
     } else {
-        echo "Error: " . $stmt->error;
+        echo json_encode(['success' => false, 'message' => 'Error al ejecutar la consulta']);
     }
-    $stmt->close();
-} else {
-    header('Location: usuarios_READ.php?error=ID no válido');
-    exit();
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+} finally {
+    if (isset($stmt)) $stmt->close();
+    if (isset($check)) $check->close();
+    $conn->close();
 }
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>
-        // Definir el tiempo máximo de inactividad en milisegundos
-        var tiempoInactividad = 2700000; // 45 minutos
-
-        // Variable para almacenar el temporizador
-        var temporizadorInactividad;
-
-        // Función que redirige a logout.php cuando el tiempo de inactividad ha pasado
-        function cerrarSesion() {
-            window.location.href = 'logout.php?error=2'; // Redirigir a logout.php con error de sesión expirada
-        }
-
-        // Función para reiniciar el temporizador
-        function reiniciarTemporizador() {
-            // Limpiar el temporizador anterior
-            clearTimeout(temporizadorInactividad);
-            // Iniciar un nuevo temporizador
-            temporizadorInactividad = setTimeout(cerrarSesion, tiempoInactividad);
-        }
-
-        // Detectar eventos de actividad del usuario
-        window.onload = reiniciarTemporizador; // Al cargar la página
-        document.onmousemove = reiniciarTemporizador; // Al mover el mouse
-        document.onkeypress = reiniciarTemporizador; // Al pulsar una tecla
-        document.onclick = reiniciarTemporizador; // Al hacer clic
-        document.onscroll = reiniciarTemporizador; // Al hacer scroll
-    </script>
-</head>
-</html>
